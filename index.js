@@ -27,6 +27,11 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setAnimationLoop(animation);
   document.body.appendChild(renderer.domElement);
+
+  // Add scroll listener.
+  window.addEventListener("wheel", function(e) {
+    camera.position.z += e.deltaY * 0.1;
+  }, true);
 }
 
 function animation(time) {
