@@ -12,8 +12,8 @@
     "webpack-dev-server": "^3.11.2"
   },
   "scripts": {
-    "dev": "npx webpack serve",
-    "deploy": "webpack -p --config webpack.config.js"
+    "dev": "npx webpack serve --config webpack.config.js",
+    "deploy": "npx webpack --config webpack.config.js --mode production"
   },
   "author": "",
   "license": "ISC"
