@@ -1,92 +1,89 @@
 require("file-loader?name=[name].[ext]!./src/html/index.html");
 import {
-  PerspectiveCamera,
+  OrthographicCamera,
   Scene,
   Mesh,
   WebGLRenderer,
-  TorusKnotGeometry,
   ShaderMaterial,
-  MeshNormalMaterial,
-  Vector2,
-  Clock,
-  Vector3,
+  DataTexture,
+  RGBFormat,
+  PlaneBufferGeometry,
+  PlaneGeometry,
+  CircleGeometry,
+  RingGeometry,
+  BufferGeometry,
+  BufferAttribute,
+  Points,
+  MeshBasicMaterial,
 } from "three";
-import fragmentShader from "./src/glsl/frag.glsl";
+import vertexShader from "./src/glsl/vs.glsl";
+import fragmentShader from "./src/glsl/fs.glsl";
 
 let camera;
 let scene;
 let renderer;
-let geometry;
 let material;
 let mesh;
-let clock;
+let texture;
+let w = window.innerWidth;
+let h = window.innerHeight;
 
-let u_time = 0;
+// data buffer
+let data, uvs;
+const bufWidth = 10;
+const bufHeight = bufWidth;
+const bufSize = bufWidth * bufHeight;
 
-// uniforms are "global" variables accessible from within the shader
-let uniforms = {
-  u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
-  u_time: { value: u_time },
-};
-
-init();
+// initialize buffers and start animation loop
+initialize();
 raf();
 
-function init() {
-  camera = new PerspectiveCamera(
-    5,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.z = 100;
-
+// functions
+function initialize() {
+  renderer = new WebGLRenderer();
+  renderer.setSize(w, h);
+  document.body.appendChild(renderer.domElement);
   scene = new Scene();
-  clock = new Clock();
+  camera = new OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 100);
+  camera.position.z = 1;
 
-  geometry = new TorusKnotGeometry(1, 0.3, 100, 16);
+  // create entirely white data buffer and fill with some random garbage
+  data = new Uint8Array(3 * bufSize).fill(0);
+  uvs = new Float32Array(2 * bufSize).fill(0);
+  for (let i = 0; i < bufSize; i++) {
+    // set pixel to random color
+    data[i] = data[i + 1] = data[i + 2] = Math.floor(255 * Math.random());
+    // compute uv
+    const u = (i % bufWidth) / bufWidth;
+    const v = ~~(i / bufHeight) / bufHeight; // ~~ is more efficient Math.floor
+    const id = i * 2;
+    uvs[id] = u;
+    uvs[id + 1] = v;
+  }
+  texture = new DataTexture(data, bufWidth, bufHeight, RGBFormat);
+
+  // material
+  // material = new MeshBasicMaterial({ map: texture });
   material = new ShaderMaterial({
-    uniforms,
+    uniforms: {
+      input_texture: { value: texture },
+    },
+    vertexShader,
     fragmentShader,
   });
 
+  // geometry
+  let geometry = new PlaneBufferGeometry(w, h, 1, 1);
+  // geometry.setAttribute("uv", new BufferAttribute(uvs, 2, true));
   mesh = new Mesh(geometry, material);
+  // mesh.scale.set(w, h, 1);
+
+  // add to scene
   scene.add(mesh);
-
-  renderer = new WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  // add scroll listener
-  window.addEventListener(
-    "wheel",
-    function (e) {
-      camera.position.z += e.deltaY * 0.1;
-      if (camera.position.z < 25) camera.position.z = 25;
-      else if (camera.position.z > 200) camera.position.z = 200;
-      console.log(camera.position.z);
-    },
-    true
-  );
 }
 
 function raf() {
   requestAnimationFrame(raf);
-  u_time += clock.getDelta();
-
-  // update uniforms
-  material.uniforms.u_time.value = u_time;
-  material.uniforms.u_resolution.value = new Vector2(
-    window.innerWidth,
-    window.innerHeight
-  );
-
-  // rotate mesh
-  mesh.rotation.x = u_time / 2;
-  mesh.rotation.y = u_time / 1;
-  mesh.rotation.z = u_time / 0.5;
-
-  // render frame
   renderer.clear();
   renderer.render(scene, camera);
 }
