@@ -6,7 +6,7 @@ a tank of goop
 
 ```bash
 npm install
-npm run dev  # serve local serve with hot reload
+npm run dev  # run local server with hot reload
 ```
 
 you may need to install `npx` if the binary is missing: `npm install -g npx`
