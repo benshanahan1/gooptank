@@ -4,7 +4,7 @@ import {
   Scene,
   Mesh,
   WebGLRenderer,
-  TorusKnotGeometry,
+  PlaneBufferGeometry,
   ShaderMaterial,
   MeshNormalMaterial,
   Vector2,
@@ -44,13 +44,14 @@ function init() {
   scene = new Scene();
   clock = new Clock();
 
-  geometry = new TorusKnotGeometry(1, 0.3, 100, 16);
+  geometry = new PlaneBufferGeometry();
   material = new ShaderMaterial({
     uniforms,
     fragmentShader,
   });
 
   mesh = new Mesh(geometry, material);
+  mesh.scale.set(window.innerWidth, window.innerHeight, 1);
   scene.add(mesh);
 
   renderer = new WebGLRenderer({ antialias: true, alpha: true });
@@ -81,10 +82,6 @@ function raf() {
     window.innerHeight
   );
 
-  // rotate mesh
-  mesh.rotation.x = u_time / 2;
-  mesh.rotation.y = u_time / 1;
-  mesh.rotation.z = u_time / 0.5;
 
   // render frame
   renderer.clear();

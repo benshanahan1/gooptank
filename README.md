@@ -16,3 +16,7 @@ you may need to install `npx` if the binary is missing: `npm install -g npx`
 ```bash
 npm run deploy
 ```
+
+## References and Inspiration
+
+[physarum implementation by nicoptere](https://github.com/nicoptere/physarum)

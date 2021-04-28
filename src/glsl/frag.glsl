@@ -10,8 +10,8 @@ void main() {
     );
     
     // modify color by normalized (x,y) coord
-    colorWheel = colorWheel * (gl_FragCoord.x / u_resolution.x);
-    colorWheel = colorWheel * (gl_FragCoord.y / u_resolution.y);
+    colorWheel = colorWheel * abs(sin(1. * gl_FragCoord.x / u_resolution.x));
+    colorWheel = colorWheel * abs(sin(1. * gl_FragCoord.y / u_resolution.y));
     
     // set pixel color
     gl_FragColor = vec4(colorWheel, 1.0);
