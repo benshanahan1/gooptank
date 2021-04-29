@@ -27,6 +27,7 @@ let u_time = 0;
 let uniforms = {
   u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
   u_time: { value: u_time },
+  u_mouse: { type: "v2", value: new Vector2() }
 };
 
 init();
@@ -50,12 +51,19 @@ function init() {
     fragmentShader,
   });
 
+  // create a new mesh object and add it to the scene
   mesh = new Mesh(geometry, material);
   mesh.scale.set(window.innerWidth, window.innerHeight, 1);
   scene.add(mesh);
 
+  // create the renderer
   renderer = new WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // set the window size, and make it resize automatically
+  onWindowResize();
+  window.addEventListener( 'resize', onWindowResize, false );
+
+  // add the renderer to the page
   document.body.appendChild(renderer.domElement);
 
   // add scroll listener
@@ -69,11 +77,22 @@ function init() {
     },
     true
   );
+
+  // add mouse listener
+  document.onmousemove = function(e){
+    uniforms.u_mouse.value.x = e.pageX
+    uniforms.u_mouse.value.y = e.pageY
+  }
 }
 
+var delta;
 function raf() {
   requestAnimationFrame(raf);
-  u_time += clock.getDelta();
+
+  // advance the time uniforma and print the framerate
+  delta = clock.getDelta();
+  // console.log(1./delta);
+  u_time += delta;
 
   // update uniforms
   material.uniforms.u_time.value = u_time;
@@ -82,8 +101,14 @@ function raf() {
     window.innerHeight
   );
 
-
   // render frame
   renderer.clear();
   renderer.render(scene, camera);
+}
+
+// function to change the size of the render if the window changes size
+function onWindowResize( event ) {
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    uniforms.u_resolution.value.x = renderer.domElement.width;
+    uniforms.u_resolution.value.y = renderer.domElement.height;
 }

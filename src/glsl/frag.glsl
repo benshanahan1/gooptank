@@ -1,3 +1,4 @@
+uniform vec2 u_mouse;
 uniform vec2 u_resolution;
 uniform float u_time;
 
@@ -8,11 +9,11 @@ void main() {
         abs(sin(u_time * 0.3)),
         abs(sin(u_time * 0.5))
     );
-    
+
     // modify color by normalized (x,y) coord
-    colorWheel = colorWheel * abs(sin(1. * gl_FragCoord.x / u_resolution.x));
-    colorWheel = colorWheel * abs(sin(1. * gl_FragCoord.y / u_resolution.y));
-    
+    colorWheel.x = colorWheel.x * abs(cos(10. * (gl_FragCoord.x - u_mouse.x) / u_resolution.x));
+    colorWheel.y = colorWheel.y * abs(cos(10. * (gl_FragCoord.y + u_mouse.y) / u_resolution.y));
+
     // set pixel color
     gl_FragColor = vec4(colorWheel, 1.0);
 }
