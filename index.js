@@ -11,106 +11,106 @@ import {
   Clock,
   Vector3,
 } from "three";
-import fragmentShader from "./src/glsl/frag2.glsl";
+import frag1 from "./src/glsl/frag2.glsl";
+import frag2 from "./src/glsl/frag2.glsl";
 
-let camera;
-let scene;
-let renderer;
-let geometry;
-let material;
-let mesh;
-let clock;
+///////////////////////////////////////////////////////////////////////////////
+// basic setup
+///////////////////////////////////////////////////////////////////////////////
 
 let u_time = 0;
 
-// uniforms are "global" variables accessible from within the shader
-let uniforms = {
-  u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
-  u_time: { value: u_time },
-  u_mouse: { type: "v2", value: new Vector2() }
-};
 
-init();
-raf();
+let camera = new OrthographicCamera(
+  -window.innerWidth / 2,
+  window.innerWidth / 2,
+  window.innerHeight / 2,
+  -window.innerHeight / 2,
+  0.1,
+  1000
+);
+camera.position.z = 100;
 
-function init() {
-  camera = new OrthographicCamera(
-    -window.innerWidth / 2,
-    window.innerWidth / 2,
-    window.innerHeight / 2,
-    -window.innerHeight / 2,
-    0.1,
-    1000
-  );
-  camera.position.z = 100;
+let scene = new Scene();
 
-  scene = new Scene();
-  clock = new Clock();
+///////////////////////////////////////////////////////////////////////////////
+// frag1
+///////////////////////////////////////////////////////////////////////////////
 
-  geometry = new PlaneBufferGeometry();
-  material = new ShaderMaterial({
-    uniforms,
-    fragmentShader,
-  });
 
-  // create a new mesh object and add it to the scene
-  mesh = new Mesh(geometry, material);
-  mesh.scale.set(window.innerWidth, window.innerHeight, 1);
-  scene.add(mesh);
 
-  // create the renderer
-  renderer = new WebGLRenderer({ antialias: true, alpha: true });
+///////////////////////////////////////////////////////////////////////////////
+// frag2
+///////////////////////////////////////////////////////////////////////////////
 
-  // set the window size, and make it resize automatically
-  onWindowResize();
-  window.addEventListener( 'resize', onWindowResize, false );
+let geometry = new PlaneBufferGeometry();
+let material = new ShaderMaterial({
+  uniforms: {
+    u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
+    u_time: { value: u_time },
+    u_mouse: { type: "v2", value: new Vector2() }
+  },
+  fragmentShader: frag2,
+});
 
-  // add the renderer to the page
-  document.body.appendChild(renderer.domElement);
+// create a new mesh object and add it to the scene
+let mesh = new Mesh(geometry, material);
+mesh.scale.set(window.innerWidth, window.innerHeight, 1);
+scene.add(mesh);
 
-  // add scroll listener
-  window.addEventListener(
-    "wheel",
-    function (e) {
-      camera.position.z += e.deltaY * 0.1;
-      if (camera.position.z < 25) camera.position.z = 25;
-      else if (camera.position.z > 200) camera.position.z = 200;
-      console.log(camera.position.z);
-    },
-    true
-  );
+///////////////////////////////////////////////////////////////////////////////
+// basic setup
+///////////////////////////////////////////////////////////////////////////////
 
-  // add mouse listener
-  document.onmousemove = function(e){
-    uniforms.u_mouse.value.x = e.pageX
-    uniforms.u_mouse.value.y = e.pageY
-  }
-}
+// clock for keeping track of time
+let clock = new Clock();
 
-var delta;
-function raf() {
-  requestAnimationFrame(raf);
+// create the renderer
+let renderer = new WebGLRenderer({ antialias: true, alpha: true });
 
-  // advance the time uniforma and print the framerate
-  delta = clock.getDelta();
-  // console.log(1./delta);
-  u_time += delta;
+// set the window size, and make it resize automatically
+onWindowResize();
+window.addEventListener( 'resize', onWindowResize, false );
 
-  // update uniforms
-  material.uniforms.u_time.value = u_time;
-  material.uniforms.u_resolution.value = new Vector2(
-    window.innerWidth,
-    window.innerHeight
-  );
+// add the renderer to the page
+document.body.appendChild(renderer.domElement);
 
-  // render frame
-  renderer.clear();
-  renderer.render(scene, camera);
+// add mouse listener
+document.onmousemove = function(e){
+  material.uniforms.u_mouse.value.x = e.pageX
+  material.uniforms.u_mouse.value.y = e.pageY
 }
 
 // function to change the size of the render if the window changes size
 function onWindowResize( event ) {
     renderer.setSize( window.innerWidth, window.innerHeight );
-    uniforms.u_resolution.value.x = renderer.domElement.width;
-    uniforms.u_resolution.value.y = renderer.domElement.height;
+    material.uniforms.u_resolution.value.x = renderer.domElement.width;
+    material.uniforms.u_resolution.value.y = renderer.domElement.height;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// run the animation
+///////////////////////////////////////////////////////////////////////////////
+
+raf();
+
+function raf() {
+  requestAnimationFrame(raf);
+
+  // advance the time uniforms
+  u_time += clock.getDelta();;
+
+  // render the first frag
+  // mesh1.visible = true;
+  // material1.uniforms.u_time.value = u_time;
+  // renderer.setSize( width1, height1 )
+  // renderer.setRenderTarget(rt1)
+  // renderer.render(scene1, camera1)
+  // renderer.setRenderTarget(null)
+  // mesh1.visible = false;
+
+  // render the second frag
+  material.uniforms.u_time.value = u_time;
+  renderer.clear();
+  renderer.render(scene, camera);
 }
