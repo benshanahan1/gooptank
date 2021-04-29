@@ -1,6 +1,6 @@
 require("file-loader?name=[name].[ext]!./src/html/index.html");
 import {
-  PerspectiveCamera,
+  OrthographicCamera,
   Scene,
   Mesh,
   WebGLRenderer,
@@ -11,7 +11,7 @@ import {
   Clock,
   Vector3,
 } from "three";
-import fragmentShader from "./src/glsl/frag.glsl";
+import fragmentShader from "./src/glsl/frag2.glsl";
 
 let camera;
 let scene;
@@ -34,9 +34,11 @@ init();
 raf();
 
 function init() {
-  camera = new PerspectiveCamera(
-    5,
-    window.innerWidth / window.innerHeight,
+  camera = new OrthographicCamera(
+    -window.innerWidth / 2,
+    window.innerWidth / 2,
+    window.innerHeight / 2,
+    -window.innerHeight / 2,
     0.1,
     1000
   );
