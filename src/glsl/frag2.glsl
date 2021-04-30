@@ -1,19 +1,16 @@
 uniform vec2 u_mouse;
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform sampler2D u_texture;
 
 void main() {
-    // super simple fragment shader; rotate R, G, & B through colors at a different rate
-    vec3 colorWheel = vec3(
-        abs(sin(u_time * 0.1)),
-        abs(sin(u_time * 0.3)),
-        abs(sin(u_time * 0.5))
-    );
 
-    // modify color by normalized (x,y) coord
-    colorWheel.x = colorWheel.x * abs(cos(10. * (gl_FragCoord.x - u_mouse.x) / u_resolution.x));
-    colorWheel.y = colorWheel.y * abs(cos(10. * (gl_FragCoord.y + u_mouse.y) / u_resolution.y));
+    // u_texture is 10x10, so compute an index between 0 and 9
+    vec2 pos = floor(10. * gl_FragCoord.xy / u_resolution);
 
-    // set pixel color
-    gl_FragColor = vec4(colorWheel, 1.0);
+    // make sure we're computing pos correctly
+    // gl_FragColor = vec4(pos.x/10., pos.y/10., 1, 1.0);
+
+    // use pos to index into u_texture
+    gl_FragColor = texture2D(u_texture, pos);
 }
