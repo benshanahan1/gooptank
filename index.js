@@ -24,8 +24,14 @@ const getWindowSize = () => [window.innerWidth, window.innerHeight];
 
 let [w, h] = getWindowSize();
 
-let dataWidth = 10;
-let dataHeight = 10;
+let dataWidth = 250;
+let dataHeight = dataWidth;
+
+const cameraSpeed = 5.0;
+let keyLeft = false,
+  keyUp = false,
+  keyRight = false,
+  keyDown = false;
 
 let u_time = 0;
 
@@ -57,6 +63,7 @@ let material1 = new ShaderMaterial({
     u_time: { value: u_time },
     u_mouse: { type: "v2", value: new Vector2() },
     u_texture: { value: input_texture },
+    u_data_width: { value: dataWidth },
   },
   fragmentShader: frag1,
 });
@@ -83,6 +90,7 @@ let material2 = new ShaderMaterial({
     u_time: { value: u_time },
     u_mouse: { type: "v2", value: new Vector2() },
     u_texture: { value: null },
+    u_data_width: { value: dataWidth },
   },
   fragmentShader: frag2,
 });
@@ -105,22 +113,66 @@ let renderer = new WebGLRenderer({ antialias: true, alpha: true });
 // set the window size, and make it resize automatically
 onWindowResize();
 window.addEventListener("resize", onWindowResize, false);
+window.addEventListener("mousemove", onMouseMove, false);
+window.addEventListener("keydown", onKeyDown, false);
+window.addEventListener("keyup", onKeyUp, false);
 
 // add the renderer to the page
 document.body.appendChild(renderer.domElement);
 
 // add mouse listener
-document.onmousemove = function (e) {
-  material1.uniforms.u_mouse.value.x = e.pageX;
-  material1.uniforms.u_mouse.value.y = e.pageY;
-};
+function onMouseMove(e) {
+  const { pageX, pageY } = e;
+  material1.uniforms.u_mouse = { value: { x: pageX, y: pageY } };
+}
 
 // function to change the size of the render if the window changes size
-function onWindowResize(event) {
+function onWindowResize(e) {
   let [w, h] = getWindowSize();
   renderer.setSize(w, h);
-  material2.uniforms.u_resolution.value.x = renderer.domElement.width;
-  material2.uniforms.u_resolution.value.y = renderer.domElement.height;
+  material2.uniforms.u_resolution = {
+    value: { x: renderer.domElement.width, y: renderer.domElement.height },
+  };
+}
+
+function onKeyDown(e) {
+  const { key } = e;
+  switch (key) {
+    case "w":
+      keyUp = true;
+      break;
+    case "a":
+      keyLeft = true;
+      break;
+    case "s":
+      keyDown = true;
+      break;
+    case "d":
+      keyRight = true;
+      break;
+    default:
+      break;
+  }
+}
+
+function onKeyUp(e) {
+  const { key } = e;
+  switch (key) {
+    case "w":
+      keyUp = false;
+      break;
+    case "a":
+      keyLeft = false;
+      break;
+    case "s":
+      keyDown = false;
+      break;
+    case "d":
+      keyRight = false;
+      break;
+    default:
+      break;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,6 +188,20 @@ function raf() {
 
   // advance the time uniforms
   u_time += clock.getDelta();
+
+  // move the camera
+  if (keyLeft) {
+    camera.position.x -= cameraSpeed;
+  }
+  if (keyRight) {
+    camera.position.x += cameraSpeed;
+  }
+  if (keyUp) {
+    camera.position.y += cameraSpeed;
+  }
+  if (keyDown) {
+    camera.position.y -= cameraSpeed;
+  }
 
   // render the first frag
   mesh1.visible = true;
