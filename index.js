@@ -16,7 +16,7 @@ import {
 import frag1 from "./src/glsl/frag1.glsl";
 import frag2 from "./src/glsl/frag2.glsl";
 
-const getWindowSize = () => [window.innerWidth / 2, window.innerHeight / 2];
+const getWindowSize = () => [window.innerWidth, window.innerHeight];
 
 ///////////////////////////////////////////////////////////////////////////////
 // basic setup
@@ -117,8 +117,8 @@ document.onmousemove = function (e) {
 
 // function to change the size of the render if the window changes size
 function onWindowResize(event) {
-  let [w1, h1] = getWindowSize();
-  renderer.setSize(w1, h1);
+  let [w, h] = getWindowSize();
+  renderer.setSize(w, h);
   material2.uniforms.u_resolution.value.x = renderer.domElement.width;
   material2.uniforms.u_resolution.value.y = renderer.domElement.height;
 }
