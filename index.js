@@ -7,10 +7,8 @@ import {
   WebGLRenderTarget,
   PlaneBufferGeometry,
   ShaderMaterial,
-  MeshNormalMaterial,
   Vector2,
   Clock,
-  Vector3,
   RGBAFormat,
   FloatType,
   DataTexture,
@@ -18,43 +16,57 @@ import {
 import frag1 from "./src/glsl/frag1.glsl";
 import frag2 from "./src/glsl/frag2.glsl";
 
+const getWindowSize = () => [window.innerWidth / 2, window.innerHeight / 2];
+
 ///////////////////////////////////////////////////////////////////////////////
 // basic setup
 ///////////////////////////////////////////////////////////////////////////////
 
+let [w, h] = getWindowSize();
+
+let dataWidth = 10;
+let dataHeight = 10;
+
 let u_time = 0;
 
-let camera = new OrthographicCamera(
-  -window.innerWidth / 2,
-  window.innerWidth / 2,
-  window.innerHeight / 2,
-  -window.innerHeight / 2,
-  0.1,
-  1000
-);
+let camera = new OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 1000);
 camera.position.z = 100;
 
 ///////////////////////////////////////////////////////////////////////////////
 // frag1
 ///////////////////////////////////////////////////////////////////////////////
 
+// create a data texture
+let input_data = new Float32Array(dataWidth * dataHeight * 4).map((o) =>
+  Math.random()
+);
+let input_texture = new DataTexture(
+  input_data,
+  dataWidth,
+  dataHeight,
+  RGBAFormat,
+  FloatType
+);
+// input_texture.needsUpdate = true;
+
 let scene1 = new Scene();
 let geometry1 = new PlaneBufferGeometry();
 let material1 = new ShaderMaterial({
   uniforms: {
-    u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
+    u_resolution: { value: new Vector2(w, h) },
     u_time: { value: u_time },
     u_mouse: { type: "v2", value: new Vector2() },
+    u_texture: { value: input_texture },
   },
   fragmentShader: frag1,
 });
 
 // create a new mesh object and add it to the scene
 let mesh1 = new Mesh(geometry1, material1);
-mesh1.scale.set(window.innerWidth, window.innerHeight);
+mesh1.scale.set(w, h);
 scene1.add(mesh1);
 
-let rt1 = new WebGLRenderTarget(10, 10, {
+let rt1 = new WebGLRenderTarget(w, h, {
   format: RGBAFormat,
   type: FloatType,
 });
@@ -63,24 +75,21 @@ let rt1 = new WebGLRenderTarget(10, 10, {
 // frag2
 ///////////////////////////////////////////////////////////////////////////////
 
-let input_data = new Float32Array(10 * 10 * 4);
-let input_texture = new DataTexture(input_data, 10, 10, RGBAFormat, FloatType);
-input_texture.needsUpdate = true;
-
 let scene2 = new Scene();
 let geometry2 = new PlaneBufferGeometry();
 let material2 = new ShaderMaterial({
   uniforms: {
-    u_resolution: { value: new Vector2(window.innerWidth, window.innerHeight) },
+    u_resolution: { value: new Vector2(w, h) },
     u_time: { value: u_time },
-    u_mouse: { type: "v2", value: new Vector2(), u_texture: input_texture },
+    u_mouse: { type: "v2", value: new Vector2() },
+    u_texture: { value: null },
   },
   fragmentShader: frag2,
 });
 
 // create a new mesh object and add it to the scene
 let mesh2 = new Mesh(geometry2, material2);
-mesh2.scale.set(window.innerWidth, window.innerHeight, 1);
+mesh2.scale.set(w, h, 1);
 scene2.add(mesh2);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +117,8 @@ document.onmousemove = function (e) {
 
 // function to change the size of the render if the window changes size
 function onWindowResize(event) {
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  let [w1, h1] = getWindowSize();
+  renderer.setSize(w1, h1);
   material2.uniforms.u_resolution.value.x = renderer.domElement.width;
   material2.uniforms.u_resolution.value.y = renderer.domElement.height;
 }
@@ -122,13 +132,15 @@ raf();
 function raf() {
   requestAnimationFrame(raf);
 
+  let [w2, h2] = getWindowSize();
+
   // advance the time uniforms
   u_time += clock.getDelta();
 
   // render the first frag
   mesh1.visible = true;
   material1.uniforms.u_time.value = u_time;
-  renderer.setSize(10, 10);
+  renderer.setSize(w2, h2);
   renderer.setRenderTarget(rt1);
   renderer.render(scene1, camera);
   renderer.setRenderTarget(null);
@@ -137,8 +149,8 @@ function raf() {
   // console.log(rt1.texture);
 
   // render the second frag
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  material2.uniforms.u_texture = rt1.texture;
+  renderer.setSize(w2, h2);
+  material2.uniforms.u_texture.value = rt1.texture;
   material2.uniforms.u_time.value = u_time;
   renderer.clear();
   renderer.render(scene2, camera);
