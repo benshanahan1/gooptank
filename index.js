@@ -30,7 +30,7 @@ let h = window.innerHeight;
 
 // data buffer
 let data, uvs;
-const bufWidth = 10;
+const bufWidth = 100;
 const bufHeight = bufWidth;
 const bufSize = bufWidth * bufHeight;
 
