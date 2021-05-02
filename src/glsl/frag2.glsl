@@ -4,13 +4,12 @@ uniform float u_time;
 uniform sampler2D u_texture;
 
 void main() {
+    float size = 10.0;
+    vec2 pos = floor(size * gl_FragCoord.xy / u_resolution);
+    pos = pos / size; // pos must be between 0 and 1, so divide by size
     
-    // u_texture is 10x10, so compute an index between 0 and 9
-    vec2 pos = floor(10.0 * gl_FragCoord.xy / u_resolution);
+    // sample color from texture
+    vec4 texel = texture2D(u_texture, pos);
     
-    // make sure we're computing pos correctly
-    // gl_FragColor = vec4(pos.x/10., pos.y/10., 1, 1.0);
-    
-    // use pos to index into u_texture
-    gl_FragColor = texture2D(u_texture, pos);
+    gl_FragColor = texel;
 }
