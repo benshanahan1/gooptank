@@ -9,12 +9,13 @@ import {
   ShaderMaterial,
   Vector2,
   Clock,
-  RGBAFormat,
   FloatType,
   DataTexture,
+  RGBAFormat,
 } from "three";
-import frag1 from "./src/glsl/frag1.glsl";
-import frag2 from "./src/glsl/frag2.glsl";
+import frag1 from "./src/glsl/0010_horiz_warp.glsl";
+import frag2 from "./src/glsl/0020_color_change.glsl";
+import frag3 from "./src/glsl/0100_postprocess.glsl";
 
 const getWindowSize = () => [window.innerWidth, window.innerHeight];
 
@@ -24,36 +25,40 @@ const getWindowSize = () => [window.innerWidth, window.innerHeight];
 
 let [w, h] = getWindowSize();
 
-let dataWidth = 250;
-let dataHeight = dataWidth;
-
-const cameraSpeed = 5.0;
-let keyLeft = false,
-  keyUp = false,
-  keyRight = false,
-  keyDown = false;
+let dataWidth = w;
+let dataHeight = h;
+let dataSize = dataWidth * dataHeight;
+let dataByteDepth = 4;
+let nSeedPixels = 4096;
 
 let u_time = 0;
 
-let camera = new OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 1000);
+let camera = new OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.01, 1000);
 camera.position.z = 100;
 
 ///////////////////////////////////////////////////////////////////////////////
-// frag1
+// initialize buffers
 ///////////////////////////////////////////////////////////////////////////////
 
-// create a data texture
-let input_data = new Float32Array(dataWidth * dataHeight * 4).map((o) =>
-  Math.random()
-);
-let input_texture = new DataTexture(
-  input_data,
+let inputData = new Float32Array(dataSize * dataByteDepth).fill(0);
+for (let i = 0; i < nSeedPixels; i++) {
+  const dataIdx = Math.floor(dataSize * dataByteDepth * Math.random());
+  inputData[dataIdx] = Math.random();
+  inputData[dataIdx + 1] = Math.random();
+  inputData[dataIdx + 2] = Math.random();
+  inputData[dataIdx + 3] = 1.0;
+}
+let inputTexture = new DataTexture(
+  inputData,
   dataWidth,
   dataHeight,
   RGBAFormat,
   FloatType
 );
-// input_texture.needsUpdate = true;
+
+///////////////////////////////////////////////////////////////////////////////
+// frag1
+///////////////////////////////////////////////////////////////////////////////
 
 let scene1 = new Scene();
 let geometry1 = new PlaneBufferGeometry();
@@ -61,9 +66,8 @@ let material1 = new ShaderMaterial({
   uniforms: {
     u_resolution: { value: new Vector2(w, h) },
     u_time: { value: u_time },
-    u_mouse: { type: "v2", value: new Vector2() },
-    u_texture: { value: input_texture },
-    u_data_width: { value: dataWidth },
+    u_mouse: { value: new Vector2() },
+    u_texture: { value: inputTexture },
   },
   fragmentShader: frag1,
 });
@@ -88,17 +92,42 @@ let material2 = new ShaderMaterial({
   uniforms: {
     u_resolution: { value: new Vector2(w, h) },
     u_time: { value: u_time },
-    u_mouse: { type: "v2", value: new Vector2() },
-    u_texture: { value: null },
-    u_data_width: { value: dataWidth },
+    u_mouse: { value: new Vector2() },
+    u_texture: { value: inputTexture },
   },
   fragmentShader: frag2,
 });
 
 // create a new mesh object and add it to the scene
 let mesh2 = new Mesh(geometry2, material2);
-mesh2.scale.set(w, h, 1);
+mesh2.scale.set(w, h);
 scene2.add(mesh2);
+
+let rt2 = new WebGLRenderTarget(w, h, {
+  format: RGBAFormat,
+  type: FloatType,
+});
+
+///////////////////////////////////////////////////////////////////////////////
+// frag3
+///////////////////////////////////////////////////////////////////////////////
+
+let scene3 = new Scene();
+let geometry3 = new PlaneBufferGeometry();
+let material3 = new ShaderMaterial({
+  uniforms: {
+    u_resolution: { value: new Vector2(w, h) },
+    u_time: { value: u_time },
+    u_mouse: { value: new Vector2() },
+    u_texture: { value: null },
+  },
+  fragmentShader: frag3,
+});
+
+// create a new mesh object and add it to the scene
+let mesh3 = new Mesh(geometry3, material3);
+mesh3.scale.set(w, h, 1);
+scene3.add(mesh3);
 
 ///////////////////////////////////////////////////////////////////////////////
 // basic setup
@@ -114,16 +143,16 @@ let renderer = new WebGLRenderer({ antialias: true, alpha: true });
 onWindowResize();
 window.addEventListener("resize", onWindowResize, false);
 window.addEventListener("mousemove", onMouseMove, false);
-window.addEventListener("keydown", onKeyDown, false);
-window.addEventListener("keyup", onKeyUp, false);
 
 // add the renderer to the page
 document.body.appendChild(renderer.domElement);
 
 // add mouse listener
 function onMouseMove(e) {
+  const [w, h] = getWindowSize();
   const { pageX, pageY } = e;
-  material1.uniforms.u_mouse = { value: { x: pageX, y: pageY } };
+  material1.uniforms.u_mouse = { value: { x: pageX / w, y: pageY / h } };
+  material2.uniforms.u_mouse = { value: { x: pageX / w, y: pageY / h } };
 }
 
 // function to change the size of the render if the window changes size
@@ -135,46 +164,6 @@ function onWindowResize(e) {
   };
 }
 
-function onKeyDown(e) {
-  const { key } = e;
-  switch (key) {
-    case "w":
-      keyUp = true;
-      break;
-    case "a":
-      keyLeft = true;
-      break;
-    case "s":
-      keyDown = true;
-      break;
-    case "d":
-      keyRight = true;
-      break;
-    default:
-      break;
-  }
-}
-
-function onKeyUp(e) {
-  const { key } = e;
-  switch (key) {
-    case "w":
-      keyUp = false;
-      break;
-    case "a":
-      keyLeft = false;
-      break;
-    case "s":
-      keyDown = false;
-      break;
-    case "d":
-      keyRight = false;
-      break;
-    default:
-      break;
-  }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // run the animation
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,40 +173,38 @@ raf();
 function raf() {
   requestAnimationFrame(raf);
 
-  let [w2, h2] = getWindowSize();
+  let [w0, h0] = getWindowSize();
 
   // advance the time uniforms
   u_time += clock.getDelta();
 
-  // move the camera
-  if (keyLeft) {
-    camera.position.x -= cameraSpeed;
-  }
-  if (keyRight) {
-    camera.position.x += cameraSpeed;
-  }
-  if (keyUp) {
-    camera.position.y += cameraSpeed;
-  }
-  if (keyDown) {
-    camera.position.y -= cameraSpeed;
-  }
-
-  // render the first frag
+  // first layer
   mesh1.visible = true;
   material1.uniforms.u_time.value = u_time;
-  renderer.setSize(w2, h2);
+  renderer.setSize(w0, h0);
   renderer.setRenderTarget(rt1);
   renderer.render(scene1, camera);
   renderer.setRenderTarget(null);
   mesh1.visible = false;
 
-  // console.log(rt1.texture);
-
-  // render the second frag
-  renderer.setSize(w2, h2);
+  // pass first layer back to second
   material2.uniforms.u_texture.value = rt1.texture;
+
+  // second layer
+  mesh2.visible = true;
   material2.uniforms.u_time.value = u_time;
-  renderer.clear();
+  renderer.setSize(w0, h0);
+  renderer.setRenderTarget(rt2);
   renderer.render(scene2, camera);
+  renderer.setRenderTarget(null);
+  mesh2.visible = false;
+
+  // pass second layer back to first
+  material1.uniforms.u_texture.value = rt2.texture;
+
+  // postprocess
+  material3.uniforms.u_texture.value = rt2.texture;
+  renderer.setSize(w0, h0);
+  renderer.clear();
+  renderer.render(scene3, camera);
 }
